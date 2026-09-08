@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
-    title="StudyFlow API",                         # Identifies the API in the documentation
+    title="StudyBuddy API",                         # Identifies the API in the documentation
     description="Workload-aware academic task planning API",
     version="0.1.0",                               # Tracks the current API version
 )
@@ -20,6 +20,6 @@ app.add_middleware(
 def health_check():
     return {
         "status": "healthy",                       # Confirms that the API is running correctly
-        "service": "TemporaryName API",
+        "service": "StudyBuddy API",
         "version": "0.1.0",
     }
