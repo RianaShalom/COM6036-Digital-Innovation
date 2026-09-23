@@ -30,7 +30,7 @@ def create_task(
     db: Session = Depends(get_database),
 ):
     # Temporary user ID until JWT authentication is implemented.
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    current_user: User = Depends(get_current_user)
 
     return task_service.create_task(
         db=db,
@@ -48,7 +48,7 @@ def get_tasks(
     db: Session = Depends(get_database),
 ):
     # Temporary user ID until JWT authentication is implemented.
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    current_user: User = Depends(get_current_user)
 
     return task_service.get_tasks(
         db=db,
@@ -66,7 +66,7 @@ def get_task(
     db: Session = Depends(get_database),
 ):
     # Temporary user ID until JWT authentication is implemented.
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    current_user: User = Depends(get_current_user)
 
     task = task_service.get_task(
         db=db,
@@ -94,7 +94,7 @@ def update_task(
     db: Session = Depends(get_database),
 ):
     # Temporary user ID until JWT authentication is implemented.
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    current_user: User = Depends(get_current_user)
 
     task = task_service.update_task(
         db=db,
@@ -122,7 +122,7 @@ def delete_task(
     db: Session = Depends(get_database),
 ):
     # Temporary user ID until JWT authentication is implemented.
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    current_user: User = Depends(get_current_user)
 
     deleted = task_service.delete_task(
         db=db,

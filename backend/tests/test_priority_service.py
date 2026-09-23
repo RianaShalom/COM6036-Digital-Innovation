@@ -7,6 +7,7 @@ from app.services.priority_service import (
     calculate_effort,
     calculate_priority,
     calculate_urgency,
+    calculate_workload_pressure,
     priority_level,
 )
 
@@ -102,3 +103,59 @@ def test_priority_level_medium():
 def test_priority_level_low():
     assert priority_level(0) == "low"
     assert priority_level(39.99) == "low"
+
+def test_workload_pressure_is_based_on_available_capacity():
+    pressure = calculate_workload_pressure(
+        outstanding_hours=8,
+        days_available=4,
+        daily_capacity_hours=4,
+    )
+
+    assert pressure == 50.0
+
+
+def test_workload_pressure_reaches_one_hundred_when_capacity_is_exceeded():
+    pressure = calculate_workload_pressure(
+        outstanding_hours=20,
+        days_available=4,
+        daily_capacity_hours=4,
+    )
+
+    assert pressure == 100.0
+
+
+def test_workload_pressure_is_zero_when_no_work_is_outstanding():
+    pressure = calculate_workload_pressure(
+        outstanding_hours=0,
+        days_available=4,
+        daily_capacity_hours=4,
+    )
+
+    assert pressure == 0.0
+
+
+def test_workload_pressure_is_maximum_for_overdue_work():
+    pressure = calculate_workload_pressure(
+        outstanding_hours=5,
+        days_available=0,
+        daily_capacity_hours=4,
+    )
+
+    assert pressure == 100.0
+
+
+def test_negative_outstanding_hours_are_rejected():
+    with pytest.raises(ValueError):
+        calculate_workload_pressure(
+            outstanding_hours=-1,
+            days_available=4,
+        )
+
+
+def test_invalid_daily_capacity_is_rejected():
+    with pytest.raises(ValueError):
+        calculate_workload_pressure(
+            outstanding_hours=4,
+            days_available=2,
+            daily_capacity_hours=0,
+        )

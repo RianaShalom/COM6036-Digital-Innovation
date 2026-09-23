@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# Registers the authentication endpoints used for user registration and login.
+from app.api.auth import router as auth_router
 from app.api.tasks import router as task_router
-
 
 app = FastAPI(
     title="StudyBuddy API",
@@ -18,9 +19,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Registers the task management endpoints.
 app.include_router(task_router)
 
 
+# Provides a simple endpoint for checking whether the API is running.
 @app.get("/api/health")
 def health_check():
     return {

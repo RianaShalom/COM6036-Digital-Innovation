@@ -50,6 +50,30 @@ def calculate_difficulty(difficulty: int) -> float:
     return difficulty / 5 * 100       # Converts the 1–5 difficulty rating to a 0–100 score
 
 
+# Calculates workload pressure from outstanding work and available study capacity.
+def calculate_workload_pressure(
+    outstanding_hours: float,
+    days_available: float,
+    daily_capacity_hours: float = 4.0,
+) -> float:
+    if outstanding_hours < 0:
+        raise ValueError("Outstanding hours cannot be negative.")
+
+    if days_available <= 0:
+        return 100.0
+
+    if daily_capacity_hours <= 0:
+        raise ValueError("Daily capacity must be greater than zero.")
+
+    available_capacity = days_available * daily_capacity_hours
+
+    workload_pressure = (
+        outstanding_hours / available_capacity
+    ) * 100
+
+    return round(max(0.0, min(100.0, workload_pressure)), 2)
+
+
 def calculate_priority(
     deadline: datetime,
     estimated_hours: float,
