@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,11 +14,19 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Allows local development and the deployed frontend to access the API.
+cors_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    cors_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,6 +40,7 @@ app.include_router(auth_router)
 
 # Registers the study sessions endpoints.
 app.include_router(study_session_router)
+
 
 # Provides a simple endpoint for checking whether the API is running.
 @app.get("/api/health")
