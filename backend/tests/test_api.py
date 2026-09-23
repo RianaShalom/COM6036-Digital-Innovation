@@ -376,3 +376,140 @@ def test_user_cannot_delete_another_users_task(client):
     )
 
     assert delete_response.status_code == 404
+
+def test_authenticated_user_can_record_study_session(client):
+    register_user(client, "study-session-api@example.com")
+    login_response = login_user(client, "study-session-api@example.com")
+    token = login_response.json()["access_token"]
+
+    create_response = client.post(
+        "/api/tasks",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "title": "Study session task",
+            "description": "Study session test",
+            "module": "COM6036",
+            "deadline": (
+                datetime.now(timezone.utc) + timedelta(days=5)
+            ).isoformat(),
+            "estimated_hours": 2,
+            "difficulty": 2,
+        },
+    )
+
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    session_response = client.post(
+        "/api/study-sessions",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "task_id": task_id,
+            "duration_minutes": 90,
+        },
+    )
+
+    assert session_response.status_code == 201
+    assert session_response.json()["task_id"] == task_id
+    assert session_response.json()["duration_minutes"] == 90
+
+
+def test_study_session_rejects_invalid_duration(client):
+    register_user(client, "invalid-session-api@example.com")
+    login_response = login_user(client, "invalid-session-api@example.com")
+    token = login_response.json()["access_token"]
+
+    response = client.post(
+        "/api/study-sessions",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "task_id": "00000000-0000-0000-0000-000000000000",
+            "duration_minutes": 0,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_user_cannot_record_study_session_for_another_users_task(client):
+    register_user(client, "session-owner@example.com")
+    owner_login = login_user(client, "session-owner@example.com")
+    owner_token = owner_login.json()["access_token"]
+
+    create_response = client.post(
+        "/api/tasks",
+        headers={"Authorization": f"Bearer {owner_token}"},
+        json={
+            "title": "Private study task",
+            "description": "Ownership test",
+            "module": "COM6036",
+            "deadline": (
+                datetime.now(timezone.utc) + timedelta(days=5)
+            ).isoformat(),
+            "estimated_hours": 2,
+            "difficulty": 2,
+        },
+    )
+
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    register_user(client, "session-other@example.com")
+    other_login = login_user(client, "session-other@example.com")
+    other_token = other_login.json()["access_token"]
+
+    session_response = client.post(
+        "/api/study-sessions",
+        headers={"Authorization": f"Bearer {other_token}"},
+        json={
+            "task_id": task_id,
+            "duration_minutes": 60,
+        },
+    )
+
+    assert session_response.status_code == 404
+
+
+def test_study_session_summary_returns_total_time(client):
+    register_user(client, "session-summary-api@example.com")
+    login_response = login_user(client, "session-summary-api@example.com")
+    token = login_response.json()["access_token"]
+
+    create_response = client.post(
+        "/api/tasks",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "title": "Summary study task",
+            "description": "Summary test",
+            "module": "COM6036",
+            "deadline": (
+                datetime.now(timezone.utc) + timedelta(days=5)
+            ).isoformat(),
+            "estimated_hours": 4,
+            "difficulty": 3,
+        },
+    )
+
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    for duration in [45, 75]:
+        session_response = client.post(
+            "/api/study-sessions",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "task_id": task_id,
+                "duration_minutes": duration,
+            },
+        )
+
+        assert session_response.status_code == 201
+
+    summary_response = client.get(
+        "/api/study-sessions/summary",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert summary_response.status_code == 200
+    assert summary_response.json()["total_minutes"] == 120
+    assert summary_response.json()["total_hours"] == 2.0
