@@ -7,6 +7,11 @@ from app.db.database import Base
 from app.models.task import Task
 from app.models.user import User
 
+from fastapi.testclient import TestClient
+
+from app.api.dependencies import get_current_user
+from app.db.database import get_db
+from app.main import app
 
 # Creates a separate PostgreSQL database connection for integration tests.
 TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + "/studybuddy_test"
@@ -50,3 +55,17 @@ def db(test_engine):
         session.commit()
 
         session.close()
+
+@pytest.fixture
+def client(db):
+    # Replaces the application's database dependency with the isolated test database.
+    def override_get_db():
+        yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    # Removes the dependency override after the test completes.
+    app.dependency_overrides.clear()

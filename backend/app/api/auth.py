@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -15,7 +16,6 @@ router = APIRouter(
     prefix="/api/auth",
     tags=["authentication"],
 )
-
 
 # Registers a new StudyBuddy user.
 @router.post(
@@ -34,7 +34,12 @@ def register(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         )
-
+    except IntegrityError:
+        # Handles a duplicate email created by a concurrent registration request.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this email already exists.",
+        )
 
 # Authenticates a user and returns a JWT access token.
 @router.post(

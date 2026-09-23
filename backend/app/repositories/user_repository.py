@@ -20,7 +20,12 @@ def get_user_by_id(db: Session, user_id: UUID) -> User | None:
 
 # Adds a new user to the database and returns the saved user.
 def create_user(db: Session, user: User) -> User:
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+    except Exception:
+        # Rolls back the transaction so the session remains usable after a database failure.
+        db.rollback()
+        raise

@@ -8,10 +8,15 @@ from app.models.task import Task
 
 # Creates a new task and saves it to the database.
 def create_task(db: Session, task: Task) -> Task:
-    db.add(task)
-    db.commit()
-    db.refresh(task)
-    return task
+    try:
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+        return task
+    except Exception:
+        # Rolls back the transaction so the session remains usable after a database failure.
+        db.rollback()
+        raise
 
 
 # Finds a task belonging to the specified user.
@@ -48,12 +53,22 @@ def get_outstanding_tasks(db: Session, user_id: UUID) -> list[Task]:
 
 # Saves changes made to an existing task.
 def update_task(db: Session, task: Task) -> Task:
-    db.commit()
-    db.refresh(task)
-    return task
+    try:
+        db.commit()
+        db.refresh(task)
+        return task
+    except Exception:
+        # Rolls back the transaction so the session remains usable after a database failure.
+        db.rollback()
+        raise
 
 
 # Deletes an existing task from the database.
 def delete_task(db: Session, task: Task) -> None:
-    db.delete(task)
-    db.commit()
+    try:
+        db.delete(task)
+        db.commit()
+    except Exception:
+        # Rolls back the transaction so the session remains usable after a database failure.
+        db.rollback()
+        raise
