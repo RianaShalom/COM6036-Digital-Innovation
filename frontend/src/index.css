@@ -347,4 +347,84 @@ button {
   .task-card-header {
     flex-direction: column;
   }
+  
+  .workload-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.summary-card {
+  padding: 18px;
+  background: white;
+  border: 1px solid #e1e5eb;
+  border-radius: 12px;
+}
+
+.summary-card span {
+  display: block;
+  color: #667085;
+  font-size: 0.8rem;
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.5rem;
+}
+
+.priority-explanation {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e5eb;
+}
+
+.priority-explanation h4 {
+  margin: 0 0 12px;
+}
+
+.factor-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.factor-list div {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.factor-list span {
+  display: block;
+  color: #667085;
+  font-size: 0.8rem;
+}
+
+.factor-list strong {
+  display: block;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .workload-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .factor-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .workload-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .factor-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 }

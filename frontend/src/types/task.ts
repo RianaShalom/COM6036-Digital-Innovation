@@ -17,6 +17,7 @@ export interface Task {
 export interface PrioritisedTask extends Task {
   priority_score: number;
   priority_level: string;
+  priority_factors: PriorityFactors;
 }
 
 export interface CreateTaskRequest {
@@ -26,4 +27,11 @@ export interface CreateTaskRequest {
   deadline: string;
   estimated_hours: number;
   difficulty: number;
+}
+
+export interface PriorityFactors {
+  urgency: number;
+  effort: number;
+  difficulty: number;
+  workload_pressure: number;
 }
