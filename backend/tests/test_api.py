@@ -231,3 +231,148 @@ def test_user_cannot_access_another_users_task(client):
     )
 
     assert response.status_code == 404
+
+def test_authenticated_user_can_update_own_task(client):
+    register_user(client, "update-api@example.com")
+    login_response = login_user(client, "update-api@example.com")
+    token = login_response.json()["access_token"]
+
+    create_response = client.post(
+        "/api/tasks",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "title": "Original task title",
+            "description": "Original description",
+            "module": "COM6036",
+            "deadline": (
+                datetime.now(timezone.utc) + timedelta(days=5)
+            ).isoformat(),
+            "estimated_hours": 2,
+            "difficulty": 2,
+        },
+    )
+
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    update_response = client.patch(
+        f"/api/tasks/{task_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "title": "Updated task title",
+            "estimated_hours": 4,
+        },
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["title"] == "Updated task title"
+    assert float(update_response.json()["estimated_hours"]) == 4
+
+
+def test_authenticated_user_can_delete_own_task(client):
+    register_user(client, "delete-api@example.com")
+    login_response = login_user(client, "delete-api@example.com")
+    token = login_response.json()["access_token"]
+
+    create_response = client.post(
+        "/api/tasks",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "title": "Task to delete",
+            "description": "Delete test",
+            "module": "COM6036",
+            "deadline": (
+                datetime.now(timezone.utc) + timedelta(days=5)
+            ).isoformat(),
+            "estimated_hours": 2,
+            "difficulty": 2,
+        },
+    )
+
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    delete_response = client.delete(
+        f"/api/tasks/{task_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert delete_response.status_code == 204
+
+    get_response = client.get(
+        f"/api/tasks/{task_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert get_response.status_code == 404
+
+
+def test_user_cannot_update_another_users_task(client):
+    register_user(client, "owner-api@example.com")
+    owner_login = login_user(client, "owner-api@example.com")
+    owner_token = owner_login.json()["access_token"]
+
+    create_response = client.post(
+        "/api/tasks",
+        headers={"Authorization": f"Bearer {owner_token}"},
+        json={
+            "title": "Private task",
+            "description": "Ownership test",
+            "module": "COM6036",
+            "deadline": (
+                datetime.now(timezone.utc) + timedelta(days=5)
+            ).isoformat(),
+            "estimated_hours": 2,
+            "difficulty": 2,
+        },
+    )
+
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    register_user(client, "other-update-api@example.com")
+    other_login = login_user(client, "other-update-api@example.com")
+    other_token = other_login.json()["access_token"]
+
+    update_response = client.patch(
+        f"/api/tasks/{task_id}",
+        headers={"Authorization": f"Bearer {other_token}"},
+        json={"title": "Unauthorised update"},
+    )
+
+    assert update_response.status_code == 404
+
+
+def test_user_cannot_delete_another_users_task(client):
+    register_user(client, "owner-delete-api@example.com")
+    owner_login = login_user(client, "owner-delete-api@example.com")
+    owner_token = owner_login.json()["access_token"]
+
+    create_response = client.post(
+        "/api/tasks",
+        headers={"Authorization": f"Bearer {owner_token}"},
+        json={
+            "title": "Private delete task",
+            "description": "Ownership test",
+            "module": "COM6036",
+            "deadline": (
+                datetime.now(timezone.utc) + timedelta(days=5)
+            ).isoformat(),
+            "estimated_hours": 2,
+            "difficulty": 2,
+        },
+    )
+
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    register_user(client, "other-delete-api@example.com")
+    other_login = login_user(client, "other-delete-api@example.com")
+    other_token = other_login.json()["access_token"]
+
+    delete_response = client.delete(
+        f"/api/tasks/{task_id}",
+        headers={"Authorization": f"Bearer {other_token}"},
+    )
+
+    assert delete_response.status_code == 404

@@ -143,10 +143,10 @@ def update_task(
 ):
     """Update a task belonging to the authorised user."""
     task = task_service.update_task(
-        db,
-        current_user.id,
-        task_id,
-        task_data,
+    db,
+    task_id,
+    task_data,
+    current_user.id,
     )
 
     if task is None:
@@ -166,9 +166,9 @@ def delete_task(
 ):
     """Delete a task belonging to the authorised user."""
     deleted = task_service.delete_task(
-        db,
-        current_user.id,
-        task_id,
+    db,
+    task_id,
+    current_user.id,
     )
 
     if not deleted:
