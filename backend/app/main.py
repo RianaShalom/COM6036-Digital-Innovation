@@ -22,6 +22,9 @@ app.add_middleware(
 # Registers the task management endpoints.
 app.include_router(task_router)
 
+# Registers the authentication endpoints.
+app.include_router(auth_router)
+
 
 # Provides a simple endpoint for checking whether the API is running.
 @app.get("/api/health")

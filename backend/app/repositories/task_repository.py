@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.task import Task
 
 
-# Adds a new task to the database and returns the saved task.
+# Creates a new task and saves it to the database.
 def create_task(db: Session, task: Task) -> Task:
     db.add(task)
     db.commit()
@@ -23,7 +23,7 @@ def get_task(db: Session, task_id: UUID, user_id: UUID) -> Task | None:
     return db.scalars(statement).first()
 
 
-# Retrieves all tasks belonging to the specified user.
+# Returns all tasks belonging to the specified user, ordered by deadline.
 def get_tasks(db: Session, user_id: UUID) -> list[Task]:
     statement = (
         select(Task)
@@ -33,14 +33,27 @@ def get_tasks(db: Session, user_id: UUID) -> list[Task]:
     return list(db.scalars(statement).all())
 
 
-# Saves changes made to an existing task and returns the updated task.
+# Returns all outstanding tasks belonging to the specified user.
+def get_outstanding_tasks(db: Session, user_id: UUID) -> list[Task]:
+    statement = (
+        select(Task)
+        .where(
+            Task.user_id == user_id,
+            Task.status == "pending",
+        )
+        .order_by(Task.deadline.asc())
+    )
+    return list(db.scalars(statement).all())
+
+
+# Saves changes made to an existing task.
 def update_task(db: Session, task: Task) -> Task:
     db.commit()
     db.refresh(task)
     return task
 
 
-# Deletes the specified task from the database.
+# Deletes an existing task from the database.
 def delete_task(db: Session, task: Task) -> None:
     db.delete(task)
     db.commit()

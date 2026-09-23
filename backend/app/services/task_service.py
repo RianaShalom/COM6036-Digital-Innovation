@@ -6,14 +6,15 @@ from sqlalchemy.orm import Session
 from app.models.task import Task
 from app.repositories import task_repository
 from app.schemas.task import TaskCreate, TaskUpdate
+from app.services.priority_service import (
+    calculate_priority,
+    calculate_workload_pressure,
+    priority_level,
+)
 
 
 # Creates a new task for the specified user.
-def create_task(
-    db: Session,
-    task_data: TaskCreate,
-    user_id: UUID,
-) -> Task:
+def create_task(db: Session, task_data: TaskCreate, user_id: UUID) -> Task:
     task = Task(
         user_id=user_id,
         title=task_data.title,
@@ -24,28 +25,20 @@ def create_task(
         difficulty=task_data.difficulty,
         status="pending",
     )
-
     return task_repository.create_task(db, task)
 
 
-# Retrieves all tasks belonging to the specified user.
-def get_tasks(
-    db: Session,
-    user_id: UUID,
-) -> list[Task]:
+# Returns all tasks belonging to the specified user.
+def get_tasks(db: Session, user_id: UUID) -> list[Task]:
     return task_repository.get_tasks(db, user_id)
 
 
-# Retrieves a single task belonging to the specified user.
-def get_task(
-    db: Session,
-    task_id: UUID,
-    user_id: UUID,
-) -> Task | None:
+# Returns a single task belonging to the specified user.
+def get_task(db: Session, task_id: UUID, user_id: UUID) -> Task | None:
     return task_repository.get_task(db, task_id, user_id)
 
 
-# Updates an existing task belonging to the specified user.
+# Updates a task belonging to the specified user.
 def update_task(
     db: Session,
     task_id: UUID,
@@ -65,12 +58,8 @@ def update_task(
     return task_repository.update_task(db, task)
 
 
-# Deletes an existing task belonging to the specified user.
-def delete_task(
-    db: Session,
-    task_id: UUID,
-    user_id: UUID,
-) -> bool:
+# Deletes a task belonging to the specified user.
+def delete_task(db: Session, task_id: UUID, user_id: UUID) -> bool:
     task = task_repository.get_task(db, task_id, user_id)
 
     if task is None:
@@ -80,7 +69,7 @@ def delete_task(
     return True
 
 
-# Marks an existing task as completed.
+# Marks a task as completed and records the completion time.
 def complete_task(
     db: Session,
     task_id: UUID,
@@ -95,3 +84,62 @@ def complete_task(
     task.completed_at = datetime.now(timezone.utc)
 
     return task_repository.update_task(db, task)
+
+
+# Calculates priority scores for the user's outstanding tasks.
+def get_prioritised_tasks(
+    db: Session,
+    user_id: UUID,
+    daily_capacity_hours: float = 4.0,
+) -> list[tuple[Task, float, str]]:
+    tasks = task_repository.get_outstanding_tasks(db, user_id)
+
+    if not tasks:
+        return []
+
+    now = datetime.now(timezone.utc)
+
+    # Calculates the total amount of outstanding work for the user.
+    outstanding_hours = sum(
+        float(task.estimated_hours)
+        for task in tasks
+    )
+
+    prioritised_tasks = []
+
+    for task in tasks:
+        deadline = task.deadline
+
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+
+        # Calculates the available time before this task's deadline.
+        days_available = max(
+            0.0,
+            (deadline - now).total_seconds() / 86400,
+        )
+
+        workload_pressure = calculate_workload_pressure(
+            outstanding_hours=outstanding_hours,
+            days_available=days_available,
+            daily_capacity_hours=daily_capacity_hours,
+        )
+
+        score = calculate_priority(
+            deadline=deadline,
+            estimated_hours=float(task.estimated_hours),
+            difficulty=task.difficulty,
+            workload_pressure=workload_pressure,
+        )
+
+        prioritised_tasks.append(
+            (task, score, priority_level(score))
+        )
+
+    # Presents the tasks with the highest calculated priority first.
+    prioritised_tasks.sort(
+        key=lambda item: item[1],
+        reverse=True,
+    )
+
+    return prioritised_tasks
