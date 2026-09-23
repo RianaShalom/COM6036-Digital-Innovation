@@ -1,13 +1,18 @@
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 
+
+# Imports the User model only when type checking to avoid a circular import.
+if TYPE_CHECKING:
+    from app.models.user import User
 
 class Task(Base):
     __tablename__ = "tasks"              # Stores the tasks created by users
@@ -25,6 +30,10 @@ class Task(Base):
         index=True,                      # Links each task to its owner and speeds up lookups
     )
 
+    user: Mapped["User"] = relationship(
+    back_populates="tasks",
+    )
+    
     title: Mapped[str] = mapped_column(
         String(200),
         nullable=False,
