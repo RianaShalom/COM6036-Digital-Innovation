@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Registers the authentication endpoints used for user registration and login.
 from app.api.auth import router as auth_router
 from app.api.tasks import router as task_router
+from app.api.study_sessions import router as study_session_router
 
 app = FastAPI(
     title="StudyBuddy API",
@@ -27,6 +28,8 @@ app.include_router(task_router)
 # Registers the authentication endpoints.
 app.include_router(auth_router)
 
+# Registers the study sessions endpoints.
+app.include_router(study_session_router)
 
 # Provides a simple endpoint for checking whether the API is running.
 @app.get("/api/health")
